@@ -2,7 +2,7 @@
 
 A tool that logs information on moments of **temporary** weakness.
 
-Braking a bad habit can be really hard at the **beginning**, since you are still going through the process of internalizing this identity change.
+Breaking a bad habit can be really hard at the **beginning**, since you are still going through the process of internalizing the identity change.
 
 After months pass without a certain behavior being performed, it starts to become clear to the mind that said behavior isn't needed.
 
