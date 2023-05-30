@@ -1,7 +1,12 @@
+#!/usr/bin/env python3
+
 import json
 import os
 import re
+import sys
 import inquirer
+
+from datetime import datetime
 
 # --- Variables ---
 
@@ -9,6 +14,14 @@ CONFIG_PATH = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "config.json")
 
 # --- Helper Functions ---
+
+def get_datetime_information():
+    now = datetime.now()
+    info = {}
+    info["time"] = now.strftime("%H:%M")
+    info["date"] = now.strftime("%m-%d-%Y")
+    info["day"] = now.strftime("%A")
+    return info
 
 def validate_not_empty(answers, current):
         if not re.match(r".+", current):
@@ -55,10 +68,11 @@ def prompt_cue():
 
 def create_log():
     log = {}
+    log["time_info"] = get_datetime_information()
     log["temptation"] = prompt_temptation()
     log["intensity"] =  prompt_intensity()
     log["cue"] = prompt_cue()
-
+    
     # Optional Description
     add_description = inquirer.confirm(
         "Do you want to add a description?", default=False)
@@ -75,7 +89,7 @@ def load_config():
     # Create a config file if it doesn't exist
     if not os.path.exists(CONFIG_PATH):
         with open(CONFIG_PATH, "w") as config_file:
-            json.dump({}, config_file, indent = 2)
+            json.dump({"log_path": ""}, config_file, indent = 2)
     
     with open(CONFIG_PATH, "r") as config_file:
         return json.load(config_file)
@@ -86,9 +100,14 @@ def save_config():
         json.dump(CONFIG, config_file, indent = 2)
 
 
-def set_archive_path(path):
+def set_log_path():
     global CONFIG
-    CONFIG["archive_path"] = path
+    question = [
+    inquirer.Path(name="path", message="Give me a path to store the log archive",
+        path_type=inquirer.Path.DIRECTORY, exists=True)
+]
+    CONFIG["log_path"] = os.path.abspath(inquirer.prompt(question)["path"])
+    save_config()
 
 def get_config_list(list_name):
     global CONFIG
@@ -97,5 +116,65 @@ def get_config_list(list_name):
     return CONFIG[list_name]
 
 
+def load_log_archive():
+    # Create archive file if it doesn't exit
+    archive_path = os.path.join(CONFIG["log_path"], "temlo_archive.json")
+    if not os.path.exists(archive_path):
+        with open(archive_path, "w") as archive_file:
+            json.dump([], archive_file, indent = 2)
+    
+    with open(archive_path, "r") as archive_file:
+        return json.load(archive_file)
+
+def save_log(log):
+    global LOG_ARCHIVE
+    LOG_ARCHIVE.append(log)
+    archive_path = os.path.join(CONFIG["log_path"], "temlo_archive.json")
+    with open(archive_path, "w") as archive_file:
+        json.dump(LOG_ARCHIVE, archive_file, indent = 2)
+
+
+usage_text = """Log information on bothersome temptations that try to keep you from
+conquering your bad habits so you can analyze your behavior patterns.
+
+USAGE
+  temlo <command>
+  
+CORE COMMANDS
+  """
+
+# Main
+
+
+COMMANDS = ["log"]
 CONFIG = load_config()
-print(create_log())
+LOG_ARCHIVE = load_log_archive()
+
+args = sys.argv[1:]
+
+if (args_count := len(args)) == 0:
+    print(usage_text)
+    sys.exit()
+
+elif args_count == 1:
+    if args[0] == "--help" or args[0] == "-h":
+        print(usage_text)
+        sys.exit()
+    
+    elif args[0] == "log":
+        if CONFIG["log_path"] == "":
+            set_log_path()
+        try:
+            log = create_log()
+            save_log(log)
+        except:
+            print("Operation cancelled")
+    
+    elif args[0] == "set-path":
+        set_log_path()
+
+    elif args[0] not in COMMANDS:
+        print(
+          f'Error: Command "{args[0]}" doesn\'t exist. See "temlo --help" for help.'
+          )
+        sys.exit()
