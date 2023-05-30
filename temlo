@@ -133,6 +133,22 @@ def save_log(log):
     with open(archive_path, "w") as archive_file:
         json.dump(LOG_ARCHIVE, archive_file, indent = 2)
 
+def remove_from_list():
+    option = inquirer.list_input("You want to remove a",
+        choices = ["Temptation", "Cue"]).lower()
+    config_list = get_config_list(option + "_list")
+    if len(config_list) == 0:
+        print(f"There is no {option} to remove.")
+        sys.exit()
+    else:
+        value = inquirer.list_input(f"Choose a {option} to be removed",
+            choices = ["... Cancel", *config_list])
+        if value == "... Cancel":
+            print("Operation Cancelled")
+            sys.exit()
+        else:
+            CONFIG[option + "_list"].remove(value)
+            save_config()
 
 usage_text = """Log information on bothersome temptations that try to keep you from
 conquering your bad habits so you can analyze your behavior patterns.
@@ -141,12 +157,16 @@ USAGE
   temlo <command>
   
 CORE COMMANDS
+
+  log        Log information about the current temptation and save it to archive.
+  set-path   Set the archive path to save the logs.   
+  remove     Remove a cue or temptation from your list.  
   """
 
 # Main
 
 
-COMMANDS = ["log"]
+COMMANDS = ["log", "set-path", "remove"]
 CONFIG = load_config()
 LOG_ARCHIVE = load_log_archive()
 
@@ -171,7 +191,13 @@ elif args_count == 1:
             print("Operation cancelled")
     
     elif args[0] == "set-path":
-        set_log_path()
+        try:
+            set_log_path()
+        except:
+            None
+    
+    elif args[0] == "remove":
+        remove_from_list()
 
     elif args[0] not in COMMANDS:
         print(
