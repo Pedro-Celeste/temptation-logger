@@ -77,7 +77,7 @@ def create_log():
     add_description = inquirer.confirm(
         "Do you want to add a description?", default=False)
     if add_description:
-        log["description"] = inquirer.text(
+        log["description"] = inquirer.editor(
             message = "Write a short description of what happened: ",
             validate = validate_not_empty)
     else:
